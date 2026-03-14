@@ -18,58 +18,67 @@ class UserSeeder extends Seeder
     public function run()
     {
         // Create Admin User
-        User::create([
-            'username' => 'admin',
-            'firstname' => 'Admin',
-            'lastname' => 'User',
-            'email' => 'admin@example.com',
-            'tel' => '0000000000',
-            'password' => Hash::make('password'),
-            'user_role_id' => 1, // Admin
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'username' => 'admin',
+                'firstname' => 'Admin',
+                'lastname' => 'User',
+                'tel' => '0000000000',
+                'password' => Hash::make('password'),
+                'user_role_id' => 1, // Admin
+            ]
+        );
 
         // Create Farm Owner User with a Farm and IoT Devices
-        $farmOwner = User::create([
-            'username' => 'owner',
-            'firstname' => 'Farm',
-            'lastname' => 'Owner',
-            'email' => 'owner@example.com',
-            'tel' => '0000000001',
-            'password' => Hash::make('password'),
-            'user_role_id' => 2, // Farm Owner
-        ]);
+        $farmOwner = User::firstOrCreate(
+            ['email' => 'owner@example.com'],
+            [
+                'username' => 'owner',
+                'firstname' => 'Farm',
+                'lastname' => 'Owner',
+                'tel' => '0000000001',
+                'password' => Hash::make('password'),
+                'user_role_id' => 2, // Farm Owner
+            ]
+        );
 
-        $farm = Farm::create([
-            'name' => 'My First Farm',
-            'description' => 'A small, mixed farm.',
-            'farm_category_id' => 4, // Mixed
-            'user_id' => $farmOwner->id,
-        ]);
+        $farm = Farm::firstOrCreate(
+            ['name' => 'My First Farm', 'user_id' => $farmOwner->id],
+            [
+                'description' => 'A small, mixed farm.',
+                'farm_category_id' => 4, // Mixed
+            ]
+        );
 
-        IotDevice::create([
-            'name' => 'Living Room Temp Sensor',
-            'description' => 'Measures temperature in the living room.',
-            'farm_id' => $farm->id,
-            'type' => 'sensor',
-            'sensor_type_id' => 1, // Temperature
-        ]);
+        IotDevice::firstOrCreate(
+            ['name' => 'Living Room Temp Sensor', 'farm_id' => $farm->id],
+            [
+                'description' => 'Measures temperature in the living room.',
+                'type' => 'sensor',
+                'sensor_type_id' => 1, // Temperature
+            ]
+        );
 
-        IotDevice::create([
-            'name' => 'Water Pump',
-            'description' => 'Controls the water pump for irrigation.',
-            'farm_id' => $farm->id,
-            'type' => 'actuator',
-        ]);
+        IotDevice::firstOrCreate(
+            ['name' => 'Water Pump', 'farm_id' => $farm->id],
+            [
+                'description' => 'Controls the water pump for irrigation.',
+                'type' => 'actuator',
+            ]
+        );
 
         // Create a regular user
-        User::create([
-            'username' => 'user',
-            'firstname' => 'Regular',
-            'lastname' => 'User',
-            'email' => 'user@example.com',
-            'tel' => '0000000002',
-            'password' => Hash::make('password'),
-            'user_role_id' => 3, // User
-        ]);
+        User::firstOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'username' => 'user',
+                'firstname' => 'Regular',
+                'lastname' => 'User',
+                'tel' => '0000000002',
+                'password' => Hash::make('password'),
+                'user_role_id' => 3, // User
+            ]
+        );
     }
 }

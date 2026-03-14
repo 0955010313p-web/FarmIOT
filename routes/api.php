@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\UserRolesController;
 use App\Http\Controllers\Api\SensorTypesController;
 use App\Http\Controllers\Api\FarmCategoriesController;
 use App\Http\Controllers\Api\UserFarmsController;
+use App\Http\Controllers\Api\MqttProxyController;
+use App\Http\Controllers\FeedingLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,4 +63,13 @@ Route::middleware('auth:api')->group(function () {
     Route::apiResource('sensor-types', SensorTypesController::class);
     Route::apiResource('farm-categories', FarmCategoriesController::class);
     Route::apiResource('user-farms', UserFarmsController::class);
+    
+    // MQTT publish via backend TCP (no WS required)
+    Route::post('mqtt/publish', [MqttProxyController::class, 'publish']);
+    
+    // Feeding Logs
+    Route::get('feeding-logs', [FeedingLogController::class, 'index']);
+    Route::post('feeding-logs', [FeedingLogController::class, 'store']);
+    Route::get('feeding-logs/latest', [FeedingLogController::class, 'latest']);
+    Route::get('feeding-logs/status', [FeedingLogController::class, 'status']);
 });

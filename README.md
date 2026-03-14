@@ -1,3 +1,62 @@
+## FarmIOT Web Application
+
+เว็บแอปสำหรับจัดการฟาร์ม + อุปกรณ์ IoT (Sensor/Actuator) พร้อม Dashboard แบบ real-time ผ่าน MQTT และ REST API (Laravel + React/Inertia)
+
+### Tech stack
+- **Backend**: Laravel (RESTful API)
+- **Frontend**: React (Inertia)
+- **Auth**: JWT (Bearer Token)
+- **Realtime**: MQTT (Publish/Subscribe)
+
+### Quick start (Local)
+1. ติดตั้ง dependencies
+   - Backend: `composer install`
+   - Frontend: `npm install`
+2. ตั้งค่า `.env`
+   - `APP_URL=http://127.0.0.1:8000`
+   - `VITE_API_URL=${APP_URL}/api`
+   - MQTT
+     - `VITE_MQTT_ENABLE=true`
+     - `VITE_MQTT_TOPIC_BASE=iot`
+     - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME`, `MQTT_PASSWORD`
+3. สร้างตารางฐานข้อมูล
+   - `php artisan migrate`
+4. รันระบบ
+   - Backend: `php artisan serve`
+   - Frontend: `npm run dev`
+
+### JWT flow (สำคัญต่อการตรวจงาน)
+- **Login/Register**
+  - Frontend เรียก `POST /api/auth/login` หรือ `POST /api/auth/register`
+  - Backend ส่งกลับ `access_token` (JWT) และข้อมูล `user`
+- **เก็บ token**
+  - Frontend เก็บ `access_token` และ `user` ใน `localStorage`
+- **แนบ token ในทุก request ที่ต้องใช้สิทธิ์**
+  - Axios interceptor ใน `resources/js/apiClient.js` แนบ `Authorization: Bearer <token>`
+- **เมื่อ token หมดอายุ/ไม่ถูกต้อง**
+  - ถ้า API ตอบ `401` → frontend ล้าง token และ redirect ไป `/login`
+
+### MQTT topic structure
+ค่า base topic กำหนดด้วย `VITE_MQTT_TOPIC_BASE` (ค่าเริ่มต้นในโปรเจกต์คือ `iot`)
+
+- **Sensor (Subscribe)**
+  - Format: `iot/{farmId}/sensors/{device-name}`
+  - ตัวอย่าง: `iot/2/sensors/44`
+  - Payload: ตัวเลข (เช่น `25.5`)
+
+- **Actuator (Publish)**
+  - Format: `iot/{farmId}/actuators/{device-name}`
+  - ตัวอย่าง: `iot/2/actuators/iot66`
+  - Payload: `ON` หรือ `OFF`
+  - Frontend เรียก `POST /api/mqtt/publish` เพื่อ publish ผ่าน backend (TCP MQTT)
+
+### Management features
+- **Farm Management**
+  - เพิ่ม/แก้ไข/ลบฟาร์ม และ **Suspend/Activate** (field: `is_active`)
+- **IoT Device Management**
+  - เพิ่ม/แก้ไข/ลบอุปกรณ์ และ **Suspend/Activate** (field: `is_active`)
+  - กำหนดประเภทอุปกรณ์: `sensor` หรือ `actuator`
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

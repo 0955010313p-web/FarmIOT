@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SensorDataResource;
+use Carbon\Carbon;
 
 class SensorDataController extends Controller
 {
@@ -20,7 +21,6 @@ class SensorDataController extends Controller
      */
     public function index(Request $request)
     {
-        // TODO: Authorization
         $validator = Validator::make($request->all(), [
             'iot_device_id' => 'sometimes|required|exists:iot_devices,id',
             'start_date' => 'nullable|date',
@@ -31,72 +31,74 @@ class SensorDataController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        $query = SensorData::with('iotDevice'); // Eager load the relationship
+        $query = SensorData::with('iotDevice');
 
         if ($request->has('iot_device_id')) {
             $query->where('iot_device_id', $request->iot_device_id);
         }
 
         if ($request->has('start_date')) {
-            $query->where('created_at', '>=', $request->start_date);
+            $query->where('recorded_at', '>=', Carbon::parse($request->start_date));
         }
 
         if ($request->has('end_date')) {
-            $query->where('created_at', '<=', $request->end_date);
+            $query->where('recorded_at', '<=', Carbon::parse($request->end_date));
         }
 
-        $sensorData = $query->orderBy('created_at', 'desc')->paginate(100);
+        $sensorData = $query->orderBy('recorded_at', 'desc')->paginate(100);
 
         return SensorDataResource::collection($sensorData);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // TODO: Authorization
         $validator = Validator::make($request->all(), [
             'iot_device_id' => 'required|exists:iot_devices,id',
-            'sensor_type' => 'required|string|max:100',
-            'value' => 'required|numeric',
-            'unit' => 'required|string|max:20',
+            'value' => 'required|string',
+            'recorded_at' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $sensorData = SensorData::create($validator->validated());
+        $data = $validator->validated();
+        if (!isset($data['recorded_at'])) {
+            $data['recorded_at'] = now();
+        }
 
-        $sensorData->load('iotDevice'); // Load the relationship
+        $record = SensorData::create($data);
+        $record->load('iotDevice');
 
-        return response(new SensorDataResource($sensorData), 201);
+        return response(new SensorDataResource($record), 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(SensorData $sensorData)
+    public function show(SensorData $sensorDatum)
     {
-        // TODO: Authorization
-        $sensorData->load('iotDevice'); // Load the relationship
-
-        return new SensorDataResource($sensorData);
+        $sensorDatum->load('iotDevice');
+        return new SensorDataResource($sensorDatum);
     }
 
-    /**
-     * Sensor data is immutable, so the update method is omitted.
-     */
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(SensorData $sensorData)
+    public function update(Request $request, SensorData $sensorDatum)
     {
-        // TODO: Authorization
-        $sensorData->delete();
+        $validator = Validator::make($request->all(), [
+            'value' => 'sometimes|required|string',
+            'recorded_at' => 'sometimes|nullable|date',
+        ]);
 
-        return response()->json(['message' => 'Sensor data record deleted successfully'], 200);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $sensorDatum->update($validator->validated());
+        $sensorDatum->load('iotDevice');
+
+        return new SensorDataResource($sensorDatum);
+    }
+
+    public function destroy(SensorData $sensorDatum)
+    {
+        $sensorDatum->delete();
+        return response()->json(['message' => 'Sensor data deleted'], 200);
     }
 }

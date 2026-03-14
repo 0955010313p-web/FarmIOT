@@ -20,6 +20,7 @@ class FarmResource extends JsonResource
             'description' => $this->description,
             'location' => $this->location,
             'status' => $this->status,
+            'is_active' => (bool) ($this->is_active ?? true),
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
             // Include the collection of IoT devices only when the relationship is loaded

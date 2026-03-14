@@ -41,13 +41,16 @@ class IotDevicesController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'farm_id' => 'required|exists:farms,id',
-            'device_type' => 'required|string|in:sensor,actuator',
-            'ip_address' => 'nullable|ip',
-            'status' => 'required|string|in:active,inactive,maintenance',
+            'type' => 'required|string|in:sensor,actuator',
+            'sensor_type_id' => 'nullable|exists:sensor_types,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $device = IotDevice::create($validator->validated());
@@ -77,13 +80,16 @@ class IotDevicesController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'farm_id' => 'sometimes|required|exists:farms,id',
-            'device_type' => 'sometimes|required|string|in:sensor,actuator',
-            'ip_address' => 'sometimes|nullable|ip',
-            'status' => 'sometimes|required|string|in:active,inactive,maintenance',
+            'type' => 'sometimes|required|string|in:sensor,actuator',
+            'sensor_type_id' => 'sometimes|nullable|exists:sensor_types,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $iotDevice->update($validator->validated());

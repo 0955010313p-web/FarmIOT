@@ -16,12 +16,10 @@ class SensorDataResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            // 'iot_device_id' => $this->iot_device_id, // Redundant
-            'sensor_type' => $this->sensor_type,
+            'iot_device_id' => $this->iot_device_id,
             'value' => $this->value,
-            'unit' => $this->unit,
+            'recorded_at' => $this->recorded_at ? $this->recorded_at : $this->created_at,
             'created_at' => $this->created_at->toDateTimeString(),
-            // Include the IoT device object only when the relationship is loaded
             'iot_device' => new IotDeviceResource($this->whenLoaded('iotDevice')),
         ];
     }

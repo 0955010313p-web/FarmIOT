@@ -1,25 +1,37 @@
 import mqtt from 'mqtt';
 
-// --- MQTT Connection Options ---
+const enabled = (import.meta.env.VITE_MQTT_ENABLE || 'false') === 'true';
+const host = import.meta.env.VITE_MQTT_HOST || '127.0.0.1';
+const port = parseInt(import.meta.env.VITE_MQTT_PORT || '1883', 10);
+const username = import.meta.env.VITE_MQTT_USERNAME || '';
+const password = import.meta.env.VITE_MQTT_PASSWORD || '';
+const protocol = import.meta.env.VITE_MQTT_PROTOCOL || 'ws';
+
 const options = {
-    host: 'comsci2.srru.ac.th',
-    port: 1883,
-    protocol: 'ws', // Use 'ws' for frontend connections, 'mqtt' for backend
-    username: 'cssrru',
-    password: 'good2cu*99',
-    reconnectPeriod: 1000, // Try to reconnect every second if connection is lost
+    host,
+    port,
+    protocol,
+    username,
+    password,
+    reconnectPeriod: 1000,
 };
 
 class MqttService {
     constructor() {
         this.client = null;
-        this.connect();
+        if (enabled) {
+            this.connect();
+        } else {
+            console.info('MQTT disabled (set VITE_MQTT_ENABLE=true to enable).');
+        }
     }
 
     connect() {
+        if (!enabled) {
+            return;
+        }
         if (!this.client || !this.client.connected) {
-            console.log('Attempting to connect to MQTT broker...');
-            this.client = mqtt.connect(`ws://${options.host}:${options.port}`, options);
+            this.client = mqtt.connect(`${protocol}://${host}:${port}`, options);
 
             this.client.on('connect', () => {
                 console.log('Successfully connected to MQTT broker');
@@ -27,7 +39,9 @@ class MqttService {
 
             this.client.on('error', (err) => {
                 console.error('MQTT Connection Error:', err);
-                this.client.end(); // Close the connection on error
+                // Back off by stopping automatic reconnect if credentials/host are wrong
+                this.client.end(true);
+                this.client = null;
             });
 
             this.client.on('reconnect', () => {
@@ -56,7 +70,10 @@ class MqttService {
                 }
             });
         } else {
-            console.warn('MQTT client not connected. Cannot subscribe.');
+            // Reduce console noise when disabled or not connected
+            if (enabled) {
+                console.warn('MQTT client not connected. Cannot subscribe.');
+            }
         }
     }
 
@@ -68,7 +85,9 @@ class MqttService {
                 }
             });
         } else {
-            console.warn('MQTT client not connected. Cannot publish.');
+            if (enabled) {
+                console.warn('MQTT client not connected. Cannot publish.');
+            }
         }
     }
 

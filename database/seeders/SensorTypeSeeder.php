@@ -15,10 +15,15 @@ class SensorTypeSeeder extends Seeder
      */
     public function run()
     {
-        SensorType::create(['name' => 'Temperature', 'unit' => '°C']);
-        SensorType::create(['name' => 'Humidity', 'unit' => '%']);
-        SensorType::create(['name' => 'Soil Moisture', 'unit' => '%']);
-        SensorType::create(['name' => 'Light Intensity', 'unit' => 'lux']);
-        SensorType::create(['name' => 'pH', 'unit' => 'pH']);
+        $types = [
+            ['name' => 'Temperature', 'unit' => '°C'],
+            ['name' => 'Humidity', 'unit' => '%'],
+            ['name' => 'Soil Moisture', 'unit' => '%'],
+            ['name' => 'Light Intensity', 'unit' => 'lux'],
+            ['name' => 'pH', 'unit' => 'pH'],
+        ];
+        foreach ($types as $t) {
+            SensorType::firstOrCreate(['name' => $t['name']], $t);
+        }
     }
 }

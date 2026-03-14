@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Farm;
+use App\Models\FarmCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
@@ -37,16 +38,23 @@ class FarmsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:500',
-            'farm_category_id' => 'required|exists:farm_categories,id',
+            'farm_category_id' => 'sometimes|exists:farm_categories,id',
             'description' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $validatedData = $validator->validated();
         $validatedData['user_id'] = Auth::id();
+        if (!isset($validatedData['farm_category_id'])) {
+            $validatedData['farm_category_id'] = FarmCategory::value('id');
+        }
 
         $farm = Farm::create($validatedData);
 
@@ -79,10 +87,14 @@ class FarmsController extends Controller
             'location' => 'sometimes|nullable|string|max:500',
             'farm_category_id' => 'sometimes|required|exists:farm_categories,id',
             'description' => 'sometimes|nullable|string',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $farm->update($validator->validated());

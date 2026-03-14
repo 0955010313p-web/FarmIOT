@@ -4,11 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Farm extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'farm_category_id',
@@ -17,6 +16,7 @@ class Farm extends Model
         'description',
         'location', // Added to match the controller
         'status', // This was in IotDevicesController, but makes sense here too.
+        'is_active',
     ];
 
     /**

@@ -4,46 +4,50 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\FarmCategory;
+use Illuminate\Support\Facades\Validator;
 
 class FarmCategoriesController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return response()->json(FarmCategory::paginate(50));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:farm_categories,name',
+            'description' => 'nullable|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+        $cat = FarmCategory::create($validator->validated());
+        return response()->json($cat, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(FarmCategory $farmCategory)
     {
-        //
+        return response()->json($farmCategory);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, FarmCategory $farmCategory)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255|unique:farm_categories,name,' . $farmCategory->id,
+            'description' => 'sometimes|nullable|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+        $farmCategory->update($validator->validated());
+        return response()->json($farmCategory);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(FarmCategory $farmCategory)
     {
-        //
+        $farmCategory->delete();
+        return response()->json(['message' => 'Category deleted'], 200);
     }
 }

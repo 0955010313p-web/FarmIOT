@@ -60,26 +60,26 @@ export default function AuthenticatedLayout({ header, children }) {
     // --- The rest of the layout is mostly the same, but with updated user data and logout function ---
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <div className="min-h-screen bg-black">
+            <nav className="bg-gray-900/80 border-b border-purple-400/30 backdrop-blur-md sticky top-0 z-50 shadow-lg shadow-purple-500/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="shrink-0 flex items-center">
                                 <Link href="/dashboard">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                                    <ApplicationLogo className="block h-9 w-auto fill-current text-purple-400" />
                                 </Link>
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink href="/dashboard" active={window.location.pathname === '/dashboard'}>
-                                    Dashboard
+                                    <span className="text-purple-300 hover:text-purple-100 transition-colors duration-200">Dashboard</span>
                                 </NavLink>
                                 <NavLink href="/farm-management" active={window.location.pathname === '/farm-management'}>
-                                    Farm Management
+                                    <span className="text-blue-300 hover:text-blue-100 transition-colors duration-200">Farm Management</span>
                                 </NavLink>
                                 <NavLink href="/iot-device-management" active={window.location.pathname === '/iot-device-management'}>
-                                    IoT Devices
+                                    <span className="text-cyan-300 hover:text-cyan-100 transition-colors duration-200">IoT Devices</span>
                                 </NavLink>
                             </div>
                         </div>
@@ -91,9 +91,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
+                                                className="inline-flex items-center px-3 py-2 border border-purple-400/30 text-sm leading-4 font-medium rounded-md text-purple-300 bg-gray-800/50 hover:text-purple-100 hover:bg-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 transition ease-in-out duration-150"
                                             >
-                                                {user.name} {/* User from our hook */}
+                                                {user.name}
 
                                                 <svg
                                                     className="ms-2 -me-0.5 h-4 w-4"
@@ -112,8 +112,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
-                                        {/* Updated Logout Button */}
-                                        <Dropdown.Link as="button" onClick={logout}>
+                                        <Dropdown.Link as="button" onClick={logout} className="text-purple-200 hover:text-purple-100 hover:bg-purple-500/20">
                                             Log Out
                                         </Dropdown.Link>
                                     </Dropdown.Content>
@@ -121,32 +120,56 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
                         </div>
 
-                        {/* ... a lot of responsive code that remains the same ... */}
+                        {/* Hamburger menu for mobile */}
+                        <div className="-me-2 flex items-center sm:hidden">
+                            <button
+                                onClick={() => setShowingNavigationDropdown((previous) => !previous)}
+                                className="inline-flex items-center justify-center p-2 rounded-md text-purple-300 hover:text-purple-100 hover:bg-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+                            >
+                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                                    <path
+                                        className={showingNavigationDropdown ? 'hidden' : 'inline-flex'}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M4 6h16M4 12h16M4 18h16"
+                                    />
+                                    <path
+                                        className={showingNavigationDropdown ? 'inline-flex' : 'hidden'}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
-                    <div className="pt-2 pb-3 space-y-1">
+                
+                {/* Mobile navigation menu */}
+                <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden bg-gray-900/90 backdrop-blur-md border-t border-purple-400/20'}>
+                    <div className="pt-2 pb-3 space-y-1 px-4">
                         <ResponsiveNavLink href="/dashboard" active={window.location.pathname === '/dashboard'}>
-                            Dashboard
+                            <span className="text-purple-300">Dashboard</span>
                         </ResponsiveNavLink>
                         <ResponsiveNavLink href="/farm-management" active={window.location.pathname === '/farm-management'}>
-                            Farm Management
+                            <span className="text-blue-300">Farm Management</span>
                         </ResponsiveNavLink>
-                         <ResponsiveNavLink href="/iot-device-management" active={window.location.pathname === '/iot-device-management'}>
-                            IoT Devices
+                        <ResponsiveNavLink href="/iot-device-management" active={window.location.pathname === '/iot-device-management'}>
+                            <span className="text-cyan-300">IoT Devices</span>
                         </ResponsiveNavLink>
                     </div>
 
-                    <div className="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
+                    <div className="pt-4 pb-1 border-t border-purple-400/20">
                         <div className="px-4">
-                            <div className="font-medium text-base text-gray-800 dark:text-gray-200">{user.name}</div>
-                            <div className="font-medium text-sm text-gray-500">{user.email}</div>
+                            <div className="font-medium text-base text-purple-200">{user.name}</div>
+                            <div className="font-medium text-sm text-purple-400">{user.email}</div>
                         </div>
 
-                        <div className="mt-3 space-y-1">
-                            {/* Updated Logout for responsive menu */}
-                             <ResponsiveNavLink as="button" onClick={logout}>
-                                Log Out
+                        <div className="mt-3 space-y-1 px-4">
+                            <ResponsiveNavLink as="button" onClick={logout}>
+                                <span className="text-purple-300">Log Out</span>
                             </ResponsiveNavLink>
                         </div>
                     </div>
@@ -154,7 +177,7 @@ export default function AuthenticatedLayout({ header, children }) {
             </nav>
 
             {header && (
-                <header className="bg-white dark:bg-gray-800 shadow">
+                <header className="bg-gray-900/50 backdrop-blur-sm border-b border-purple-400/20 shadow-lg shadow-purple-500/10">
                     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{header}</div>
                 </header>
             )}

@@ -1,8 +1,11 @@
 import axios from 'axios';
 
+const base = import.meta.env.VITE_API_URL
+    || (import.meta.env.VITE_APP_URL ? `${import.meta.env.VITE_APP_URL}/api` : '/api');
+
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_APP_URL ? `${import.meta.env.VITE_APP_URL}/api` : '/api',
-    withCredentials: true, // Important for Laravel Sanctum if we were using it, but good practice
+    baseURL: base,
+    withCredentials: true,
     headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

@@ -5,112 +5,191 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, router, useForm } from '@inertiajs/react'; // Import useForm and router
+import Toast from '@/Components/Toast';
+import ModernButton from '@/Components/ModernButton';
+import ModernCard, { ModernCardHeader, ModernCardBody } from '@/Components/ModernCard';
+import StarryBackground from '@/Components/StarryBackground';
+import { Head, Link } from '@inertiajs/react';
+import apiClient from '@/apiClient';
 
 export default function Login({ status, canResetPassword }) {
-    // Use Inertia's useForm helper for state management
-    const { data, setData, post, processing, errors, reset } = useForm({
-        email: 'testuser@example.com', // Default for easy testing
-        password: 'password',      // Default for easy testing
-        remember: false,
-    });
+    const [data, setData] = useState({ email: '', password: '', remember: false });
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [statusMsg, setStatusMsg] = useState(status);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        // Reset password field on component unmount
         return () => {
-            reset('password');
+            setData(prev => ({ ...prev, password: '' }));
         };
     }, []);
 
     const submit = (e) => {
         e.preventDefault();
 
-        // Use Inertia's post method
-        // This will automatically handle headers and responses correctly
-        post(route('login'), {
-            onFinish: () => {
-                // This callback runs after the request is complete.
-                // Inertia handles the redirect on success automatically.
-            },
-            onError: (err) => {
-                // This callback runs if there are errors.
-                // The 'errors' object from useForm is automatically populated.
-                console.error(err);
+        setProcessing(true);
+        setErrors({});
+
+        // Basic client-side validation (UX)
+        const nextErrors = {};
+        const email = (data.email || '').trim();
+        if (!email) {
+            nextErrors.email = ['กรุณากรอกอีเมล'];
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            nextErrors.email = ['รูปแบบอีเมลไม่ถูกต้อง'];
+        }
+        if (!data.password || String(data.password).length < 6) {
+            nextErrors.password = ['รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'];
+        }
+        if (Object.keys(nextErrors).length > 0) {
+            setErrors(nextErrors);
+            setProcessing(false);
+            return;
+        }
+
+        apiClient.post('/auth/login', {
+            email: data.email,
+            password: data.password,
+        }).then(res => {
+            const { access_token, user } = res.data;
+            localStorage.setItem('access_token', access_token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setToast({ message: `ยินดีต้อนรับ ${user.name}! กำลังเข้าสู่ระบบ...`, type: 'success' });
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+        }).catch(err => {
+            if (err.response && err.response.status === 422) {
+                const apiErrors = err.response.data?.errors ?? err.response.data;
+                setErrors(apiErrors || {});
+                setToast({ message: 'กรุณาตรวจสอบข้อมูลที่กรอก', type: 'error' });
+            } else if (err.response && err.response.status === 401) {
+                setStatusMsg('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+                setToast({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', type: 'error' });
+            } else {
+                setStatusMsg('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+                setToast({ message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', type: 'error' });
             }
-        });
+        }).finally(() => setProcessing(false));
     };
 
     return (
-        <GuestLayout>
-            <Head title="Log in" />
+        <StarryBackground>
+            <Head title="Sign In - FarmIOT" />
 
-            {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email} // Use data from useForm
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)} // Use setData
-                        required
-                    />
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
+            <div className="min-h-screen flex items-center justify-center px-4">
+                <ModernCard variant="cosmicGlass" className="w-full max-w-md">
+                    <ModernCardHeader className="text-center pb-6">
+                        <div className="mb-6">
+                            <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                FarmIOT
+                            </h1>
+                            <p className="text-gray-300 text-center mt-2">Welcome back to the universe of smart farming</p>
+                        </div>
+                        
+                        {statusMsg && (
+                            <div className="mb-4 p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
+                                <p className="text-green-300 text-sm text-center">{statusMsg}</p>
+                            </div>
+                        )}
+                    </ModernCardHeader>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password} // Use data from useForm
-                        className="mt-1 block w-full"
-                        autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)} // Use setData
-                        required
-                    />
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
+                    <ModernCardBody>
+                        <form onSubmit={submit} className="space-y-6">
+                            <div>
+                                <InputLabel htmlFor="email" value="Email" className="text-purple-300" />
+                                <TextInput
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    className="mt-1 block w-full bg-gray-800/50 border-purple-400/30 text-purple-100 placeholder-purple-400/50 focus:border-purple-400 focus:ring-purple-400/20"
+                                    autoComplete="username"
+                                    isFocused={true}
+                                    onChange={(e) => setData(prev => ({ ...prev, email: e.target.value }))}
+                                    placeholder="Enter your email"
+                                    required
+                                />
+                                <InputError message={errors.email && errors.email[0]} className="mt-2 text-pink-400" />
+                            </div>
 
-                <div className="block mt-4">
-                    <label className="flex items-center">
-                        <Checkbox 
-                            name="remember" 
-                            checked={data.remember} // Use data from useForm
-                            onChange={(e) => setData('remember', e.target.checked)} // Use setData
-                        />
-                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
-                    </label>
-                </div>
+                            <div>
+                                <InputLabel htmlFor="password" value="Password" className="text-purple-300" />
+                                <TextInput
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    className="mt-1 block w-full bg-gray-800/50 border-purple-400/30 text-purple-100 placeholder-purple-400/50 focus:border-purple-400 focus:ring-purple-400/20"
+                                    autoComplete="current-password"
+                                    onChange={(e) => setData(prev => ({ ...prev, password: e.target.value }))}
+                                    showPasswordToggle={true}
+                                    placeholder="Enter your password"
+                                    required
+                                />
+                                <InputError message={errors.password && errors.password[0]} className="mt-2 text-pink-400" />
+                            </div>
 
-                <div className="flex items-center justify-end mt-4">
-                    <Link
-                        href={route('register')}
-                        className="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                    >
-                        Register
-                    </Link>
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center">
+                                    <Checkbox 
+                                        name="remember" 
+                                        checked={data.remember}
+                                        onChange={(e) => setData(prev => ({ ...prev, remember: e.target.checked }))}
+                                        className="border-purple-400/30 text-purple-400 focus:ring-purple-400/20"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-300">Remember me</span>
+                                </label>
 
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="ms-4 underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                        >
-                            Forgot your password?
-                        </Link>
-                    )}
+                                {canResetPassword && (
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                )}
+                            </div>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        {processing ? 'Logging in...' : 'Log in'}
-                    </PrimaryButton>
-                </div>
-            </form>
-        </GuestLayout>
+                            <div className="space-y-3">
+                                <ModernButton 
+                                    variant="cosmic" 
+                                    size="lg" 
+                                    disabled={processing}
+                                    className="w-full"
+                                    type="submit"
+                                >
+                                    {processing ? (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Signing in...
+                                        </span>
+                                    ) : 'Sign In'}
+                                </ModernButton>
+
+                                <Link
+                                    href="/register"
+                                    className="block text-center"
+                                >
+                                    <ModernButton 
+                                        variant="cosmicOutline" 
+                                        size="lg" 
+                                        className="w-full"
+                                    >
+                                        Create Account
+                                    </ModernButton>
+                                </Link>
+                            </div>
+                        </form>
+                    </ModernCardBody>
+                </ModernCard>
+            </div>
+        </StarryBackground>
     );
 }

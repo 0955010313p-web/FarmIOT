@@ -62,7 +62,8 @@ export default function FarmManagement({ auth }) {
         const method = isEditing ? 'put' : 'post';
 
         try {
-            await apiClient[method](url, formData);
+            const payload = { ...formData, farm_category_id: 1 };
+            await apiClient[method](url, payload);
             closeModal();
             fetchFarms();
         } catch (err) {
@@ -89,6 +90,16 @@ export default function FarmManagement({ auth }) {
         }
     };
 
+    const handleToggleActive = async (farm) => {
+        try {
+            await apiClient.put(`/farms/${farm.id}`, { is_active: !farm.is_active });
+            fetchFarms();
+        } catch (err) {
+            setError('Failed to update farm status.');
+            console.error('Toggle active error', err);
+        }
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -112,6 +123,7 @@ export default function FarmManagement({ auth }) {
                                             <tr>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
@@ -120,14 +132,22 @@ export default function FarmManagement({ auth }) {
                                                 <tr key={farm.id}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{farm.name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{farm.description}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${farm.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}`}>
+                                                            {farm.is_active ? 'Active' : 'Suspended'}
+                                                        </span>
+                                                    </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                         <button onClick={() => openModal('edit', farm)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</button>
+                                                        <button onClick={() => handleToggleActive(farm)} className="ml-4 text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200">
+                                                            {farm.is_active ? 'Suspend' : 'Activate'}
+                                                        </button>
                                                         <button onClick={() => handleDelete(farm.id)} className="ml-4 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Delete</button>
                                                     </td>
                                                 </tr>
                                             )) : (
                                                 <tr>
-                                                    <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No farms found. Click "Add Farm" to get started.</td>
+                                                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No farms found. Click "Add Farm" to get started.</td>
                                                 </tr>
                                             )}
                                         </tbody>

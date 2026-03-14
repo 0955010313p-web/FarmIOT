@@ -4,26 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ActuatorCommand extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'actuator_commands';
-    public $timestamps = true;
 
     protected $fillable = [
         'iot_device_id',
         'command',
         'status',
+        'sent_at',
+        'acknowledged_at',
     ];
 
-    /**
-     * Get the IoT device that the command belongs to.
-     */
-    public function iotDevice()
+    protected $casts = [
+        'sent_at' => 'datetime',
+        'acknowledged_at' => 'datetime',
+    ];
+
+    public function device()
     {
-        return $this->belongsTo(IotDevice::class);
+        return $this->belongsTo(IotDevice::class, 'iot_device_id');
     }
 }

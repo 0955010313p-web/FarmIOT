@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Http\Resources\UserResource; // <-- Import the UserResource
+use App\Models\UserRole;
 
 class AuthController extends Controller
 {
@@ -35,7 +36,10 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         if (! $token = auth('api')->attempt($validator->validated())) {
@@ -52,21 +56,48 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|between:2,100',
+        $payload = $request->all();
+        // Normalize common alternate field names from frontend
+        $payload['firstname'] = $payload['firstname'] ?? $payload['first_name'] ?? null;
+        $payload['lastname'] = $payload['lastname'] ?? $payload['last_name'] ?? null;
+        $payload['tel'] = $payload['tel'] ?? $payload['phone'] ?? null;
+
+        $validator = Validator::make($payload, [
+            'username' => 'required|string|max:255|unique:users,username',
+            'firstname' => 'required|string|max:255',
+            'lastname' => 'required|string|max:255',
             'email' => 'required|string|email|max:100|unique:users',
+            'tel' => 'required|string|max:50',
             'password' => 'required|string|confirmed|min:6',
         ]);
 
         if($validator->fails()){
-            return response()->json($validator->errors(), 400);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
-        ]);
+        $defaultRoleId = UserRole::where('name', 'User')->value('id')
+            ?? UserRole::where('name', 'Farm Owner')->value('id')
+            ?? UserRole::min('id');
+
+        try {
+            $user = User::create([
+                'username' => $payload['username'],
+                'firstname' => $payload['firstname'],
+                'lastname' => $payload['lastname'],
+                'email' => $payload['email'],
+                'tel' => $payload['tel'],
+                'user_role_id' => $defaultRoleId ?? 2,
+                'password' => $payload['password'] // 'hashed' cast in User will hash automatically
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'message' => 'Registration failed',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
 
         $token = auth('api')->login($user);
 

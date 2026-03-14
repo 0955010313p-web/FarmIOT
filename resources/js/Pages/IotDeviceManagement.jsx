@@ -12,11 +12,12 @@ import InputError from '@/Components/InputError';
 export default function IotDeviceManagement({ auth }) {
     const [devices, setDevices] = useState([]);
     const [farms, setFarms] = useState([]);
+    const [sensorTypes, setSensorTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
     const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', currentDevice: null });
-    const [formData, setFormData] = useState({ name: '', type: '', farm_id: '' });
+    const [formData, setFormData] = useState({ name: '', type: 'sensor', sensor_type_id: '', farm_id: '' });
     const [formErrors, setFormErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,15 +25,22 @@ export default function IotDeviceManagement({ auth }) {
         setLoading(true);
         setError(null);
         try {
-            const [devicesResponse, farmsResponse] = await Promise.all([
+            const [devicesResponse, farmsResponse, sensorTypesResponse] = await Promise.all([
                 apiClient.get('/iot-devices'),
-                apiClient.get('/farms') 
+                apiClient.get('/farms'),
+                apiClient.get('/sensor-types'),
             ]);
             setDevices(devicesResponse.data.data);
             setFarms(farmsResponse.data.data);
+            setSensorTypes(sensorTypesResponse.data.data ?? sensorTypesResponse.data);
             // Set default farm_id for new devices if farms exist
             if (farmsResponse.data.data.length > 0) {
                 setFormData(prev => ({ ...prev, farm_id: farmsResponse.data.data[0].id }));
+            }
+            // default sensor type if exists
+            const sts = sensorTypesResponse.data.data ?? sensorTypesResponse.data;
+            if (sts && sts.length > 0) {
+                setFormData(prev => ({ ...prev, sensor_type_id: sts[0].id }));
             }
         } catch (err) {
             setError('Failed to fetch data.');
@@ -49,9 +57,9 @@ export default function IotDeviceManagement({ auth }) {
     const openModal = (mode = 'add', device = null) => {
         setModalState({ isOpen: true, mode, currentDevice: device });
         if (device) {
-            setFormData({ name: device.name, type: device.type, farm_id: device.farm_id });
+            setFormData({ name: device.name, type: device.type, sensor_type_id: device.sensor_type_id ?? '', farm_id: device.farm_id });
         } else {
-            setFormData({ name: '', type: '', farm_id: farms.length > 0 ? farms[0].id : '' });
+            setFormData({ name: '', type: 'sensor', sensor_type_id: sensorTypes[0]?.id ?? '', farm_id: farms.length > 0 ? farms[0].id : '' });
         }
         setFormErrors({});
     };
@@ -81,7 +89,11 @@ export default function IotDeviceManagement({ auth }) {
         const method = isEditing ? 'put' : 'post';
 
         try {
-            await apiClient[method](url, formData);
+            const payload = { ...formData };
+            if (payload.type !== 'sensor') {
+                delete payload.sensor_type_id;
+            }
+            await apiClient[method](url, payload);
             closeModal();
             fetchData(); // Refetch all data
         } catch (err) {
@@ -105,6 +117,16 @@ export default function IotDeviceManagement({ auth }) {
                 setError('Failed to delete the device.');
                 console.error('Delete error', err);
             }
+        }
+    };
+
+    const handleToggleActive = async (device) => {
+        try {
+            await apiClient.put(`/iot-devices/${device.id}`, { is_active: !device.is_active });
+            fetchData();
+        } catch (err) {
+            setError('Failed to update device status.');
+            console.error('Toggle active error', err);
         }
     };
 
@@ -132,6 +154,7 @@ export default function IotDeviceManagement({ auth }) {
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Device Name</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Farm</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
@@ -141,14 +164,22 @@ export default function IotDeviceManagement({ auth }) {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{device.name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{device.type}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{getFarmName(device.farm_id)}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${device.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}`}>
+                                                            {device.is_active ? 'Active' : 'Suspended'}
+                                                        </span>
+                                                    </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                         <button onClick={() => openModal('edit', device)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</button>
+                                                        <button onClick={() => handleToggleActive(device)} className="ml-4 text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200">
+                                                            {device.is_active ? 'Suspend' : 'Activate'}
+                                                        </button>
                                                         <button onClick={() => handleDelete(device.id)} className="ml-4 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Delete</button>
                                                     </td>
                                                 </tr>
                                             )) : (
                                                 <tr>
-                                                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No IoT devices found. Click "Add Device" to get started.</td>
+                                                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No IoT devices found. Click "Add Device" to get started.</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -172,9 +203,28 @@ export default function IotDeviceManagement({ auth }) {
 
                     <div className="mt-4">
                         <InputLabel htmlFor="type" value="Device Type" />
-                        <TextInput id="type" name="type" value={formData.type} className="mt-1 block w-full" autoComplete="off" onChange={handleFormChange} required />
+                        <select id="type" name="type" value={formData.type} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                            <option value="sensor">Sensor</option>
+                            <option value="actuator">Actuator</option>
+                        </select>
                         {formErrors.type && <InputError message={formErrors.type[0]} className="mt-2" />}
                     </div>
+
+                    {formData.type === 'sensor' && (
+                        <div className="mt-4">
+                            <InputLabel htmlFor="sensor_type_id" value="Sensor Type" />
+                            <select id="sensor_type_id" name="sensor_type_id" value={formData.sensor_type_id} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                                {sensorTypes.length > 0 ? (
+                                    sensorTypes.map(st => (
+                                        <option key={st.id} value={st.id}>{st.name} ({st.unit})</option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>No sensor types available.</option>
+                                )}
+                            </select>
+                            {formErrors.sensor_type_id && <InputError message={formErrors.sensor_type_id[0]} className="mt-2" />}
+                        </div>
+                    )}
 
                     <div className="mt-4">
                         <InputLabel htmlFor="farm_id" value="Farm" />

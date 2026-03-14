@@ -17,13 +17,12 @@ class IotDeviceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            // 'farm_id' => $this->farm_id, // Redundant, as we are including the farm object
-            'device_type' => $this->device_type,
-            'ip_address' => $this->ip_address,
-            'status' => $this->status,
+            'type' => $this->type,
+            'farm_id' => $this->farm_id,
+            'sensor_type_id' => $this->sensor_type_id,
+            'is_active' => (bool) ($this->is_active ?? true),
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
-            // Include the farm object only when the relationship is loaded
             'farm' => new FarmResource($this->whenLoaded('farm')),
         ];
     }

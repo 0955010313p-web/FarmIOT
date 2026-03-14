@@ -11,8 +11,12 @@ export default defineConfig({
         react(),
     ],
     server: {
-        host: '0.0.0.0', // Listen on all network interfaces
+        host: '127.0.0.1',
         port: 5173,
-        strictPort: true, // Ensure port 5173 is used
+        strictPort: true,
+        hmr: {
+            host: '127.0.0.1',
+            port: 5173,
+        },
     },
 });

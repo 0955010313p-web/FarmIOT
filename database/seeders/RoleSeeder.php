@@ -15,8 +15,8 @@ class RoleSeeder extends Seeder
      */
     public function run()
     {
-        UserRole::create(['name' => 'Admin']);
-        UserRole::create(['name' => 'Farm Owner']);
-        UserRole::create(['name' => 'User']);
+        foreach (['Admin', 'Farm Owner', 'User'] as $roleName) {
+            UserRole::firstOrCreate(['name' => $roleName]);
+        }
     }
 }
